@@ -1,1 +1,66 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');\nconst fs = require('fs');\nconst path = require('path');\nrequire('dotenv').config();\n\nconst client = new Client({\n  intents: [\n    GatewayIntentBits.Guilds,\n    GatewayIntentBits.GuildMembers,\n    GatewayIntentBits.GuildMessages,\n    GatewayIntentBits.MessageContent,\n    GatewayIntentBits.DirectMessages,\n  ],\n});\n\nclient.commands = new Collection();\nclient.slashCommands = new Collection();\nclient.cooldowns = new Collection();\n\n// Load command files\nconst commandsPath = path.join(__dirname, './commands');\n\nif (fs.existsSync(commandsPath)) {\n  const commandFolders = fs.readdirSync(commandsPath);\n\n  for (const folder of commandFolders) {\n    const folderPath = path.join(commandsPath, folder);\n    if (!fs.statSync(folderPath).isDirectory()) continue;\n    \n    const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));\n    \n    for (const file of commandFiles) {\n      const filePath = path.join(folderPath, file);\n      const command = require(filePath);\n      \n      if (command.data) {\n        client.slashCommands.set(command.data.name, command);\n        console.log(`✅ Loaded command: ${command.data.name}`);\n      }\n    }\n  }\n} else {\n  console.warn('⚠️ Commands directory not found');\n}\n\n// Load event files\nconst eventsPath = path.join(__dirname, './events');\n\nif (fs.existsSync(eventsPath)) {\n  const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));\n\n  for (const file of eventFiles) {\n    const filePath = path.join(eventsPath, file);\n    const event = require(filePath);\n    \n    if (event.once) {\n      client.once(event.name, (...args) => event.execute(...args, client));\n    } else {\n      client.on(event.name, (...args) => event.execute(...args, client));\n    }\n  }\n} else {\n  console.warn('⚠️ Events directory not found');\n}\n\nclient.login(process.env.DISCORD_TOKEN);\n
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages,
+  ],
+});
+
+client.commands = new Collection();
+client.slashCommands = new Collection();
+client.cooldowns = new Collection();
+
+// Load command files
+const commandsPath = path.join(__dirname, './src/commands');
+
+if (fs.existsSync(commandsPath)) {
+  const commandFolders = fs.readdirSync(commandsPath);
+
+  for (const folder of commandFolders) {
+    const folderPath = path.join(commandsPath, folder);
+    if (!fs.statSync(folderPath).isDirectory()) continue;
+    
+    const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
+    
+    for (const file of commandFiles) {
+      const filePath = path.join(folderPath, file);
+      const command = require(filePath);
+      
+      if (command.data) {
+        client.slashCommands.set(command.data.name, command);
+        console.log(`✅ Loaded command: ${command.data.name}`);
+      }
+    }
+  }
+} else {
+  console.warn('⚠️ Commands directory not found at ./src/commands');
+}
+
+// Load event files
+const eventsPath = path.join(__dirname, './src/events');
+
+if (fs.existsSync(eventsPath)) {
+  const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+
+  for (const file of eventFiles) {
+    const filePath = path.join(eventsPath, file);
+    const event = require(filePath);
+    
+    if (event.once) {
+      client.once(event.name, (...args) => event.execute(...args, client));
+    } else {
+      client.on(event.name, (...args) => event.execute(...args, client));
+    }
+  }
+} else {
+  console.warn('⚠️ Events directory not found at ./src/events');
+}
+
+client.login(process.env.DISCORD_TOKEN);
